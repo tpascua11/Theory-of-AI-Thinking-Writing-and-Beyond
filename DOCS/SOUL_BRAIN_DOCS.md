@@ -22,6 +22,8 @@ SOUL {
 BRAIN: [MBTI type]
 ```
 
+This goes at the top of your character sheet. What comes after is yours. The rest of the sheet is however you normally build a character. SOUL and BRAIN are just the starting point. The character fleshes out further from there on their own.
+
 ---
 
 ## SOUL — The Motivational Core

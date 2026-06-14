@@ -50,12 +50,7 @@
 </svelte:head>
 
 <div class="page">
-	<header>
-		<a href="/" class="back">← Back</a>
-		<h1>SOUL</h1>
-	</header>
-
-	<main class="stage">
+	<main class="stage" aria-live="polite">
 		<div class="wheel-wrap">
 			<SoulWheel
 				{selected}
@@ -71,27 +66,24 @@
 			</button>
 		</div>
 
-		<aside aria-live="polite">
-			<div class="code-stack">
-				{#each soulBlocks as block, idx}
-					<div class="code-block">
-						{#if block}
-							<button
-								class="copy-btn"
-								class:copied={copied[idx]}
-								onclick={() => copyCode(block.raw, idx)}
-							>
-								{copied[idx] ? 'Copied!' : '📋 Copy'}
-							</button>
-							<div class="code-label">{selected} — {block.surfaceId}</div>
-							<div class="code-body">{@html block.code}</div>
-						{:else}
-							<div class="code-empty">select a core to decode...</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-		</aside>
+		<div class="panels" aria-live="polite">
+			{#each [0, 1] as idx}
+				<div class="code-block">
+					{#if soulBlocks[idx]}
+						<button class="copy-btn" class:copied={copied[idx]} onclick={() => copyCode(soulBlocks[idx]!.raw, idx)}>
+							{copied[idx] ? 'Copied!' : '📋 Copy'}
+						</button>
+						<div class="code-label">{selected} — {soulBlocks[idx]!.surfaceId}</div>
+						<div class="code-body">{@html soulBlocks[idx]!.code}</div>
+					{:else}
+						<div class="code-empty">select a core to decode...</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+		{#if selected !== null}
+			<p class="panels-note">// place at the top of your character sheet — what comes after is yours. the character will build out further from this as their starting soul.</p>
+		{/if}
 	</main>
 
 	<section class="docs">
@@ -106,63 +98,30 @@
 		flex-direction: column;
 	}
 
-	header {
-		padding: 28px 48px 10px;
-		position: relative;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.back {
-		position: absolute;
-		left: 48px;
-		font-size: 12px;
-		letter-spacing: 0.08em;
-		color: var(--fg-muted);
-		text-decoration: none;
-		transition: color 0.2s;
-	}
-
-	.back:hover {
-		color: var(--fg);
-		text-decoration: none;
-	}
-
-	h1 {
-		font-family: 'Cinzel', Georgia, serif;
-		font-weight: 600;
-		font-size: clamp(18px, 2.5vw, 26px);
-		letter-spacing: 0.3em;
-		color: var(--fg);
-	}
-
-	.stage {
+.stage {
 		flex: 1;
 		display: flex;
-		align-items: stretch;
-		justify-content: center;
+		flex-direction: column;
+		align-items: center;
 		padding: 8px 48px 40px;
 	}
 
 	.wheel-wrap {
-		flex: 1 1 60%;
-		max-width: 860px;
+		width: 100%;
+		max-width: 780px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-direction: column;
 	}
 
-	aside {
-		flex: 0 1 340px;
-		min-width: 280px;
-		border-left: 1px solid var(--border);
-		padding: 26px 0 26px 34px;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		align-self: center;
+	.panels {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		width: 100%;
+		max-width: 780px;
+		margin-top: 16px;
 	}
 
 	.influence-toggle {
@@ -209,19 +168,13 @@
 
 	.toggle-track.active .toggle-thumb { transform: translateX(18px); }
 
-	.code-stack {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
 	.code-block {
 		background: var(--bg-surface);
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		overflow: hidden;
 		position: relative;
-		min-height: 200px;
+		min-height: 120px;
 	}
 
 	.copy-btn {
@@ -254,10 +207,10 @@
 	}
 
 	.code-body {
-		padding: 14px 16px 18px;
+		padding: 8px 12px 12px;
 		font-family: 'Courier New', Courier, monospace;
-		font-size: 12.5px;
-		line-height: 1.65;
+		font-size: 11px;
+		line-height: 1.6;
 		color: #A8ADBD;
 		white-space: pre;
 		overflow-x: auto;
@@ -270,20 +223,31 @@
 	.code-body :global(.str) { color: #7CB35C; }
 
 	.code-empty {
-		min-height: 200px;
+		min-height: 120px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		color: var(--fg-muted);
 		opacity: 0.3;
 		font-style: italic;
-		font-size: 13px;
+		font-size: 11px;
+		text-align: center;
 	}
 
-	@media (max-width: 900px) {
-		header { padding: 26px 22px 6px; }
-		.stage { flex-direction: column; padding: 4px 18px 32px; }
-		aside { border-left: none; border-top: 1px solid var(--border); padding: 22px 6px 0; min-width: 0; }
+	.panels-note {
+		width: 100%;
+		max-width: 780px;
+		margin-top: 8px;
+		font-family: 'Courier New', Courier, monospace;
+		font-size: 11px;
+		color: var(--fg-muted);
+		opacity: 0.4;
+		letter-spacing: 0.02em;
+	}
+
+	@media (max-width: 700px) {
+		.stage { padding: 8px 18px 32px; }
+		.panels { grid-template-columns: 1fr; }
 	}
 
 	.docs {
