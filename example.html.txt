@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Ninefold Resonance — SOUL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.38/vue.global.prod.min.js"></script>
+<style>
+  :root{
+    --ink:#11131A;
+    --vessel:#1B1F2A;
+    --line:#2C3140;
+    --bone:#EDEAE2;
+    --ash:#8E93A3;
+    --white:#FFFFFF;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:
+      radial-gradient(1100px 700px at 50% 38%, #181B26 0%, var(--ink) 62%);
+    color:var(--bone);
+    font-family:'Spectral', Georgia, serif;
+    font-weight:300;
+    min-height:100vh;
+  }
+  #app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ---------- header ---------- */
+  header{
+    padding:34px 48px 10px;
+    display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;
+  }
+  .eyebrow{
+    font-family:'Cinzel', Georgia, serif;
+    font-size:11px; letter-spacing:.42em; color:var(--ash);
+  }
+  h1{
+    font-family:'Cinzel', Georgia, serif;
+    font-weight:600; font-size:clamp(22px,3vw,32px);
+    letter-spacing:.12em; color:var(--bone);
+  }
+  header .rule{ flex:1; height:1px; background:var(--line); min-width:60px; align-self:center; }
+
+  /* ---------- layout ---------- */
+  .stage{
+    flex:1; display:flex; align-items:stretch; justify-content:center;
+    gap:0; padding:8px 48px 40px;
+  }
+  .wheel-wrap{
+    flex:1 1 60%; max-width:860px; display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+  }
+  aside{
+    flex:0 1 340px; min-width:280px;
+    border-left:1px solid var(--line);
+    padding:26px 0 26px 34px;
+    display:flex; flex-direction:column; gap:20px;
+    align-self:center;
+  }
+
+  /* ---------- outer influence toggle ---------- */
+  .influence-toggle{
+    display:flex; align-items:center; justify-content:center;
+    gap:10px; margin-top:16px;
+    font-family:'Cinzel', Georgia, serif;
+    font-size:11px; letter-spacing:.3em;
+    color:var(--ash);
+    cursor:pointer; transition:color .3s;
+  }
+  .influence-toggle:hover{ color:var(--bone); }
+  .toggle-track{
+    width:36px; height:18px; background:var(--line); border-radius:9px;
+    position:relative; transition:background .3s;
+  }
+  .toggle-track.active{ background:#2BA8A0; }
+  .toggle-thumb{
+    width:14px; height:14px; background:var(--bone); border-radius:50%;
+    position:absolute; top:2px; left:2px; transition:transform .3s;
+  }
+  .toggle-track.active .toggle-thumb{ transform:translateX(18px); }
+
+  /* ---------- influence lines ---------- */
+  .inf-line{
+    stroke-width:1.4;
+    stroke-dasharray: 8 10;
+    opacity:.45;
+  }
+
+  /* ---------- code block ---------- */
+  .code-stack{ display:flex; flex-direction:column; gap:16px; }
+  .code-block{
+    background:#0D0F14;
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    position:relative;
+  }
+  .copy-btn{
+    position:absolute; top:8px; right:8px;
+    z-index:10;
+    background:none; border:1px solid var(--line); cursor:pointer;
+    color:var(--ash); font-family:'Spectral', Georgia, serif; font-size:11px;
+    padding:3px 9px; border-radius:4px; transition:all .2s;
+    opacity:.5;
+  }
+  .copy-btn:hover{ opacity:1; border-color:var(--ash); color:var(--bone); }
+  .copy-btn.copied{ opacity:1; border-color:#7CB35C; color:#7CB35C; }
+  .code-body{
+    padding:14px 16px 18px;
+    font-family:'Courier New', Courier, monospace;
+    font-size:12.5px; line-height:1.65; color:#A8ADBD;
+    white-space:pre; overflow-x:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+  .code-body::-webkit-scrollbar{ display:none; }
+
+  .code-label{
+    font-family:'Cinzel', Georgia, serif;
+    font-size:11px; letter-spacing:.25em;
+    color:var(--ash); opacity:.6;
+    padding:10px 14px 0;
+    text-transform:uppercase;
+  }
+
+  /* empty state */
+  .code-empty{
+    min-height:200px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ash); opacity:.3; font-style:italic;
+  }
+
+  /* ---------- svg states ---------- */
+  .node{ cursor:pointer; transition: opacity .5s ease, filter .5s ease; outline:none; }
+  .node text{ pointer-events:none; user-select:none; }
+
+  .node.lit  { filter: drop-shadow(0 0 16px var(--c)) drop-shadow(0 0 38px color-mix(in srgb, var(--c) 45%, transparent)); }
+  .node.kin  { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--c) 70%, transparent)); }
+
+  .node.dim{
+    filter: saturate(.22) brightness(.5)
+            drop-shadow(0 0 13px color-mix(in srgb, var(--c) 38%, transparent));
+    opacity:.9;
+  }
+  .node:focus-visible > .ring{ stroke-dasharray:4 6; }
+
+  .node-zero{ cursor:pointer; transition:filter .5s ease; outline:none; }
+  .node-zero .halo{ animation: breathe 5.2s ease-in-out infinite; transform-origin:center; }
+  .node-zero:hover, .node-zero:focus-visible{
+    filter: drop-shadow(0 0 18px rgba(255,255,255,.55));
+  }
+  .node-zero text{ pointer-events:none; user-select:none; }
+  @keyframes breathe{ 0%,100%{ opacity:.28 } 50%{ opacity:.6 } }
+
+  .wing, .growth{ transition: opacity .5s ease, filter .5s ease; }
+  .wing.faded, .growth.faded{ opacity:.07; }
+  .wing.active{ opacity:1; filter:drop-shadow(0 0 6px rgba(255,255,255,.18)); }
+  .growth.active{ opacity:1; filter:drop-shadow(0 0 6px rgba(255,255,255,.18)); }
+
+  .role-tag{
+    font-family:'Cinzel', Georgia, serif; font-size:13px; letter-spacing:.3em;
+    fill:var(--ash); text-transform:uppercase;
+    opacity:0; transition:opacity .5s ease; pointer-events:none; user-select:none;
+  }
+  .role-tag.show{ opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    .node, .wing, .growth, .role-tag, .node-zero{ transition:none; }
+    .node-zero .halo{ animation:none; opacity:.4; }
+  }
+  @media (max-width: 900px){
+    header{ padding:26px 22px 6px; }
+    .stage{ flex-direction:column; padding:4px 18px 32px; }
+    aside{ border-left:none; border-top:1px solid var(--line); padding:22px 6px 0; min-width:0; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="eyebrow">Avormore Codex · SOUL</span>
+    <h1>The Ninefold Resonance</h1>
+    <div class="rule"></div>
+  </header>
+
+  <main class="stage">
+    <div class="wheel-wrap">
+      <soul-wheel :selected="selected" :show-influence="showInfluence" @select="onSelect" @reset="onReset"></soul-wheel>
+      <div class="influence-toggle" @click="showInfluence = !showInfluence">
+        <span class="toggle-track" :class="{active: showInfluence}"><span class="toggle-thumb"></span></span>
+        <span>OUTER INFLUENCE</span>
+      </div>
+    </div>
+
+    <aside aria-live="polite">
+      <div class="code-stack">
+        <div class="code-block" v-for="(block, idx) in soulBlocks" :key="idx">
+          <button class="copy-btn" :class="{copied: block.copied}" @click="copyCode(block)">
+            {{ block.copied ? 'Copied!' : '📋 Copy' }}
+          </button>
+          <div class="code-label" v-if="selected">{{ selected }} - {{ block.surfaceId }}</div>
+          <div class="code-body" v-if="block.code"><span v-html="block.code"></span></div>
+          <div class="code-empty" v-else>select a core to decode...</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- ============ SoulWheel component template ============ -->
+<script type="text/x-template" id="soul-wheel-tpl">
+  <svg viewBox="0 0 1000 1000" role="group" aria-label="The Ninefold Resonance wheel">
+    <defs>
+      <linearGradient v-for="w in wingArcs" :key="'g'+w.a+w.b" :id="'wing'+w.a+w.b"
+        gradientUnits="userSpaceOnUse" :x1="w.x1" :y1="w.y1" :x2="w.x2" :y2="w.y2">
+        <stop offset="0" :stop-color="w.c1"/><stop offset="1" :stop-color="w.c2"/>
+      </linearGradient>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+        markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#C9CDD8"/>
+      </marker>
+    </defs>
+
+    <!-- wings (outer ring) -->
+    <path v-for="w in wingArcs" :key="'w'+w.a+w.b"
+      class="wing" :class="wingState(w)"
+      :d="w.d" fill="none" :stroke="'url(#wing'+w.a+w.b+')'" stroke-width="9"/>
+
+    <!-- growth lines -->
+    <line v-for="g in growthLines" :key="'l'+g.a+g.b"
+      class="growth" :class="growthState(g)"
+      :x1="g.x1" :y1="g.y1" :x2="g.x2" :y2="g.y2"
+      :stroke="g.color" stroke-width="3.5" marker-end="url(#arrow)"/>
+
+    <!-- outer influence: 9 ghost-dashed lines from center(0) through cores to outside -->
+    <g v-if="showInfluence">
+      <line v-for="inf in influenceLines" :key="'inf'+inf.id" class="inf-line"
+        :x1="CX" :y1="CY" :x2="inf.x2" :y2="inf.y2"
+        :stroke="inf.color" />
+    </g>
+
+    <!-- nine cores -->
+    <g v-for="c in cores" :key="c.id"
+       class="node" :class="nodeState(c.id)"
+       :style="{'--c': c.color}"
+       tabindex="0" role="button"
+       :aria-label="'Core '+c.id+': '+c.words.join(', ')"
+       @click="$emit('select', c.id)"
+       @keydown.enter.prevent="$emit('select', c.id)"
+       @keydown.space.prevent="$emit('select', c.id)">
+      <circle class="ring" :cx="c.x" :cy="c.y" r="85" fill="none" :stroke="c.color" stroke-width="2" opacity="0.35"/>
+      <circle :cx="c.x" :cy="c.y" r="78" fill="#1B1F2A" :stroke="c.color" stroke-width="4"/>
+      <text :x="c.x" :y="c.y-26" text-anchor="middle" :fill="c.color"
+        font-family="Cinzel, Georgia, serif" font-size="36" font-weight="700">{{ c.id }}</text>
+      <text :x="c.x" :y="c.y+8"  text-anchor="middle" fill="#EDEAE2" font-size="19">{{ c.words[0] }}</text>
+      <text :x="c.x" :y="c.y+34" text-anchor="middle" fill="#EDEAE2" font-size="19">{{ c.words[1] }}</text>
+    </g>
+
+    <!-- relationship tags under kin cores -->
+    <text v-for="t in roleTags" :key="'t'+t.id"
+      class="role-tag" :class="{show: t.show}"
+      :x="t.x" :y="t.y" text-anchor="middle">{{ t.label }}</text>
+
+    <!-- Core 0 -->
+    <g class="node-zero" tabindex="0" role="button"
+       aria-label="Core 0, the Subjective. Wakes all cores."
+       @click="$emit('reset')"
+       @keydown.enter.prevent="$emit('reset')"
+       @keydown.space.prevent="$emit('reset')">
+      <circle class="halo" :cx="CX" :cy="CY" r="85" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle :cx="CX" :cy="CY" r="78" fill="#1B1F2A" stroke="#FFFFFF" stroke-width="4"/>
+      <text :x="CX" :y="CY-24" text-anchor="middle" fill="#FFFFFF"
+        font-family="Cinzel, Georgia, serif" font-size="36" font-weight="700">0</text>
+      <text :x="CX" :y="CY+18" text-anchor="middle" fill="#EDEAE2" font-size="26">?, ?</text>
+    </g>
+  </svg>
+</script>
+
+<script>
+const { createApp, computed } = Vue;
+
+/* ---------- shared soul data ---------- */
+const CX = 500, CY = 500, R = 330;
+const ANGLES = { 9:-90, 1:-50, 2:-10, 3:30, 4:70, 5:110, 6:150, 7:190, 8:230 };
+const RING = [9,1,2,3,4,5,6,7,8];
+
+const SOULS = {
+  1:{ words:['Integrity','Correction'],      color:'#8A99A8', triad:'BODY' },
+  2:{ words:['Needed','Love'],               color:'#E0558C', triad:'HEART' },
+  3:{ words:['Significance','Success'],      color:'#E8B53A', triad:'HEART' },
+  4:{ words:['Identity','Compassion'],       color:'#9B59D0', triad:'HEART' },
+  5:{ words:['Understanding','Observation'], color:'#4A6FE3', triad:'HEAD' },
+  6:{ words:['Trust','Connection'],          color:'#2BA8A0', triad:'HEAD' },
+  7:{ words:['Possibility','Freedom'],       color:'#F07F2D', triad:'HEAD' },
+  8:{ words:['Power','Resolve'],             color:'#D04040', triad:'BODY' },
+  9:{ words:['Ease','Harmony'],              color:'#7CB35C', triad:'BODY' },
+};
+
+const SIMPLE = [[1,7],[7,5],[5,8],[8,2],[2,4],[4,1],[3,6],[6,9],[9,3]];
+
+const pos = id => {
+  const a = ANGLES[id] * Math.PI / 180;
+  return { x: CX + R*Math.cos(a), y: CY + R*Math.sin(a) };
+};
+const wingsOf  = id => { const i = RING.indexOf(id); return [RING[(i+8)%9], RING[(i+1)%9]]; };
+const simpleOf = id => SIMPLE.find(p => p[0]===id)[1];
+const hardOf   = id => SIMPLE.find(p => p[1]===id)[0];
+const kinOf    = id => new Set([...wingsOf(id), simpleOf(id), hardOf(id)]);
+
+/* ---------- SoulWheel component ---------- */
+const SoulWheel = {
+  template: '#soul-wheel-tpl',
+  props: { selected: { type: Number, default: null }, showInfluence: { type: Boolean, default: false } },
+  emits: ['select','reset'],
+  setup(props){
+    const cores = RING.map(id => ({ id, ...pos(id), ...SOULS[id] }));
+
+    const wingArcs = RING.map((a,i) => {
+      const b = RING[(i+1)%9], p1 = pos(a), p2 = pos(b);
+      return { a, b, x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y,
+               c1:SOULS[a].color, c2:SOULS[b].color,
+               d:`M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} A ${R} ${R} 0 0 1 ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}` };
+    });
+
+    const NODE_R = 78;
+    const growthLines = SIMPLE.map(([a,b]) => {
+      const p1 = pos(a), p2 = pos(b);
+      const dx = p2.x-p1.x, dy = p2.y-p1.y, d = Math.hypot(dx,dy), ux = dx/d, uy = dy/d;
+      return { a, b, color: SOULS[a].color,
+               x1: p1.x+ux*(NODE_R+4), y1: p1.y+uy*(NODE_R+4),
+               x2: p2.x-ux*(NODE_R+10), y2: p2.y-uy*(NODE_R+10) };
+    });
+
+    const sel = computed(() => props.selected);
+    const kin = computed(() => sel.value ? kinOf(sel.value) : null);
+
+    const nodeState = id => {
+      if (sel.value === null) return '';
+      if (id === sel.value)   return 'lit';
+      return kin.value.has(id) ? 'kin' : 'dim';
+    };
+    const wingState = w => {
+      if (sel.value === null) return '';
+      return (w.a === sel.value || w.b === sel.value) ? 'active' : 'faded';
+    };
+    const growthState = g => {
+      if (sel.value === null) return '';
+      return (g.a === sel.value || g.b === sel.value) ? 'active' : 'faded';
+    };
+
+    /* outer influence: from center(0) THROUGH each core to OUTSIDE (ghost-dashed, matches core color) */
+    const INF_EXTEND = 260;
+    const influenceLines = computed(() => {
+      if (!props.showInfluence) return [];
+      return RING.map(id => {
+        const p = pos(id);
+        const vx = p.x - CX, vy = p.y - CY;
+        const vd = Math.hypot(vx, vy);
+        const ux = vx / vd, uy = vy / vd;
+        return {
+          id,
+          color: SOULS[id].color,
+          x2: p.x + ux * INF_EXTEND,
+          y2: p.y + uy * INF_EXTEND
+        };
+      });
+    });
+
+    const roleTags = computed(() => RING.map(id => {
+      const p = pos(id);
+      let label = '', show = false;
+      if (sel.value !== null && id !== sel.value && kinOf(sel.value).has(id)){
+        show = true;
+        if (wingsOf(sel.value).includes(id)) label = 'wing';
+        else if (simpleOf(sel.value) === id) label = 'simple';
+        else label = 'hard';
+      }
+      const vx = p.x - CX, vy = p.y - CY, vd = Math.hypot(vx,vy);
+      return { id, label, show, x: p.x + (vx/vd)*118, y: p.y + (vy/vd)*118 + 5 };
+    }));
+
+    return { cores, wingArcs, growthLines, influenceLines, nodeState, wingState, growthState, roleTags, CX, CY };
+  }
+};
+
+/* ---------- page shell ---------- */
+createApp({
+  components: { SoulWheel },
+  data(){ return { selected: null, showInfluence: false }; },
+  computed: {
+    current(){ return this.selected ? { id:this.selected, ...SOULS[this.selected] } : null; },
+    currentRelations(){
+      if (!this.selected) return [];
+      const rel = (role,id) => ({ role, id, color:SOULS[id].color, words:SOULS[id].words.join(', ') });
+      const [w1,w2] = wingsOf(this.selected);
+      return [ rel('WING',w1), rel('WING',w2),
+               rel('SIMPLE GROWTH', simpleOf(this.selected)),
+               rel('HARD GROWTH',   hardOf(this.selected)) ];
+    },
+    soulBlocks(){
+      if (!this.selected) return [{code:null, raw:'', copied:false}, {code:null, raw:'', copied:false}];
+      
+      const [w1, w2] = wingsOf(this.selected);
+      const simpleT = simpleOf(this.selected);
+      const hardT = hardOf(this.selected);
+      
+      const fmtArr = (id) => `["${SOULS[id].words[0]}","${SOULS[id].words[1]}"]`;
+      const htmlArr = (id) => `<span class="punct">[</span><span class="str">"${SOULS[id].words[0]}"</span>,<span class="str">"${SOULS[id].words[1]}"</span><span class="punct">]</span>`;
+      
+      const makeBlock = (surfaceId, depthId) => {
+        const raw = `SOUL:\n{\n  DRIVE: ${fmtArr(this.selected)},\n  SURFACE: ${fmtArr(surfaceId)},\n  DEPTH: ${fmtArr(depthId)},\n  GROWTH:\n  {\n    SIMPLE: ${fmtArr(simpleT)},\n    HARD: ${fmtArr(hardT)}\n  }\n}`;
+        
+        const code = `<span class="key">SOUL</span><span class="punct">:</span>\n<span class="brace">{</span>\n  <span class="key">DRIVE</span><span class="punct">:</span> ${htmlArr(this.selected)},\n  <span class="key">SURFACE</span><span class="punct">:</span> ${htmlArr(surfaceId)},\n  <span class="key">DEPTH</span><span class="punct">:</span> ${htmlArr(depthId)},\n  <span class="key">GROWTH</span><span class="punct">:</span>\n  <span class="brace">{</span>\n    <span class="key">SIMPLE</span><span class="punct">:</span> ${htmlArr(simpleT)},\n    <span class="key">HARD</span><span class="punct">:</span> ${htmlArr(hardT)}\n  <span class="brace">}</span>\n<span class="brace">}</span>`;
+        
+        return { code, raw, copied: false, surfaceId };
+      };
+      
+      return [makeBlock(w1, w2), makeBlock(w2, w1)];
+    }
+  },
+  methods: {
+    onSelect(id){ this.selected = id; },
+    onReset(){ this.selected = null; },
+    async copyCode(block){
+      try {
+        await navigator.clipboard.writeText(block.raw);
+        block.copied = true;
+        setTimeout(() => { block.copied = false; }, 2000);
+      } catch(e) {
+        const ta = document.createElement('textarea');
+        ta.value = block.raw;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        block.copied = true;
+        setTimeout(() => { block.copied = false; }, 2000);
+      }
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
